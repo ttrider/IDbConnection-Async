@@ -1,6 +1,9 @@
 # IDbConnection-Async
 shim for IDbConnection/IDbCommand/IDataReader to unlock Async methods
 
+Install it from Nuget:
+[https://www.nuget.org/packages/IDbConnection-Async/](https://www.nuget.org/packages/IDbConnection-Async/)
+
 Just reference this assembly, and you can call Async methods on IDbConnection/IDbCommand and IDataReader:
 
 ```
