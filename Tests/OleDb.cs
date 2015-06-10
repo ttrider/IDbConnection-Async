@@ -6,7 +6,7 @@
 // </copyright>
 
 using System.Data;
-using System.Data.SqlClient;
+using System.Data.OleDb;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,20 +14,20 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Tests
 {
     [TestClass]
-    public class SqlServer
+    public class OleDb
     {
         private static string connectionString;
 
         [ClassInitialize()]
         public static void ClassInit(TestContext testcontext)
         {
-            connectionString = Utilities.CreateTestDatabase();
+            connectionString = Utilities.CreateTestOleDbDatabase();
         }
 
         [TestMethod]
         public async Task Reader_NoToken()
         {
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync();
 
@@ -54,7 +54,7 @@ namespace Tests
         public async Task Reader_WithToken()
         {
             var token = CancellationToken.None;
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync(token);
 
@@ -82,7 +82,7 @@ namespace Tests
         public async Task Reader_With_Behavior_Token()
         {
             var token = CancellationToken.None;
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync(token);
 
@@ -107,7 +107,7 @@ namespace Tests
         [TestMethod]
         public async Task Reader_With_Behavior_NoToken()
         {
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync();
 
@@ -134,7 +134,7 @@ namespace Tests
         [TestMethod]
         public async Task Scalar_With_NoToken()
         {
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync();
 
@@ -149,7 +149,7 @@ namespace Tests
         public async Task Scalar_With_Token()
         {
             var token = CancellationToken.None;
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync(token);
 
@@ -164,7 +164,7 @@ namespace Tests
         [TestMethod]
         public async Task NoQuery_With_NoToken()
         {
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync();
 
@@ -179,7 +179,7 @@ namespace Tests
         public async Task NoQuery_With_Token()
         {
             var token = CancellationToken.None;
-            using (IDbConnection connection = new SqlConnection(connectionString))
+            using (IDbConnection connection = new OleDbConnection(connectionString))
             {
                 await connection.OpenAsync(token);
 
@@ -190,58 +190,7 @@ namespace Tests
             }
         }
 
-
-
-        //[TestMethod]
-        //public void PerfCompare()
-        //{
-        //    var maxConnections = 50;
-
-        //    var direct = new List<SqlConnection>();
-        //    for (var i = 0; i < maxConnections; i++)
-        //    {
-        //        direct.Add(new SqlConnection(connectionString));
-        //    }
-
-        //    var shim = new List<IDbConnection>();
-        //    for (var i = 0; i < maxConnections; i++)
-        //    {
-        //        shim.Add(new SqlConnection(connectionString));
-        //    }
-
-        //    var directStopWatch = Stopwatch.StartNew();
-        //    for (var i = 0; i < direct.Count; i++)
-        //    {
-        //        direct[i].OpenAsync().Wait();
-        //    }
-        //    directStopWatch.Stop();
-
-        //    var shimStopWatch = Stopwatch.StartNew();
-        //    for (var i = 0; i < shim.Count; i++)
-        //    {
-        //        shim[i].OpenAsync().Wait();
-        //    }
-        //    shimStopWatch.Stop();
-
-
-        //    Console.WriteLine("Direct:{0}", directStopWatch.Elapsed);
-        //    Console.WriteLine("Shim:{0}", shimStopWatch.Elapsed);
-        //    Console.WriteLine("Diff (ms):{0}", shimStopWatch.ElapsedMilliseconds - directStopWatch.ElapsedMilliseconds);
-
-
-        //    for (var i = 0; i < direct.Count; i++)
-        //    {
-        //        direct[i].Close();
-        //    }
-        //    directStopWatch.Stop();
-
-        //    for (var i = 0; i < shim.Count; i++)
-        //    {
-        //        shim[i].Close();
-        //    }
-        //    shimStopWatch.Stop();
-
-
-        //}
+    
+    
     }
 }

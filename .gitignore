@@ -49,3 +49,9 @@ Temporary Items
 /_NCrunch_IDbConnection-Async
 *.user
 *.ncrunchsolution
+/IDbConnection-Async/bin/Release
+/IDbConnection-Async/obj/Release
+/nuget/Release
+/Tests/bin/Release
+/Tests/obj/Release
+*.suo

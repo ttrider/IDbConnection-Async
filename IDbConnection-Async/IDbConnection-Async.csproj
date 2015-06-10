@@ -42,7 +42,21 @@
     <Compile Include="AsyncAdapter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="IDbConnection-Async.nuspec" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if exist $(TargetDir)packing rd /s /q $(TargetDir)packing
+mkdir $(TargetDir)packing\lib\net45
+if not exist $(SolutionDir)nuget\$(ConfigurationName) mkdir $(SolutionDir)nuget\$(ConfigurationName)
+copy $(TargetPath) $(TargetDir)packing\lib\net45
+copy $(TargetDir)$(TargetName).pdb $(TargetDir)packing\lib\net45
+copy $(ProjectDir)IDbConnection-Async.nuspec $(TargetDir)packing
+$(SolutionDir)nuget\nuget pack $(TargetDir)packing\IDbConnection-Async.nuspec -OutputDir $(SolutionDir)nuget\$(ConfigurationName)
+
+</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -1,9 +1,18 @@
-﻿using System.Collections.Concurrent;
-using System.Linq.Expressions;
+﻿// <license>
+// The MIT License (MIT)
+// </license>
+// <copyright company="TTRider, L.L.C.">
+// Copyright (c) 2014-2015 All Rights Reserved
+// </copyright>
+
+using System.Collections.Concurrent;
+using System.Data.Common;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+
 // ReSharper disable InconsistentNaming
+// ReSharper disable MemberHidesStaticFromOuterClass
 
 namespace System.Data
 {
@@ -18,143 +27,267 @@ namespace System.Data
 
         private class ConnectionAdapter
         {
-            private readonly MethodInfo open;
-            private readonly MethodInfo openToken;
+            internal readonly Func<IDbConnection, Task> OpenAsync;
+            internal readonly Func<IDbConnection, CancellationToken, Task> OpenAsyncToken;
 
             internal ConnectionAdapter(Type type)
             {
-                this.open = type.GetMethod("OpenAsync", new Type[0]);
-                this.openToken = type.GetMethod("OpenAsync", new[] { typeof(CancellationToken) });
-            }
-
-            internal Task DoOpenAsync(IDbConnection connection)
-            {
-                if (this.open != null)
+                if (type.GetMethod("OpenAsync", new Type[0]) != null)
                 {
-                    return (Task)this.open.Invoke(connection, new object[0]);
+                    OpenAsync = async connection =>
+                    {
+                        dynamic cmd = connection;
+                        await cmd.OpenAsync();
+                    };
                 }
-                connection.Open();
-                return Task.FromResult(0);
-            }
-
-            internal Task DoOpenAsync(IDbConnection connection, CancellationToken token)
-            {
-                if (this.openToken != null)
+                else
                 {
-                    return (Task)this.openToken.Invoke(connection, new object[] { token });
+                    OpenAsync = async connection => await Task.Run(() =>
+                    {
+                        connection.Open();
+                    });
                 }
-                connection.Open();
-                return Task.FromResult(0);
+
+                if (type.GetMethod("OpenAsync", new[] { typeof(CancellationToken) }) != null)
+                {
+                    OpenAsyncToken = async (connection, token) =>
+                    {
+                        dynamic cmd = connection;
+                        await cmd.OpenAsync(token);
+                    };
+                }
+                else
+                {
+                    OpenAsyncToken = async (connection, token) => await Task.Run(() =>
+                    {
+                        connection.Open();
+                    });
+                }
             }
         }
         private class CommandAdapter
         {
-            private readonly MethodInfo executeNonQueryAsync;
-            private readonly MethodInfo executeNonQueryAsyncT;
-            private readonly MethodInfo executeReaderAsync;
-            private readonly MethodInfo executeReaderAsyncT;
-            private readonly MethodInfo executeReaderAsyncB;
-            private readonly MethodInfo executeReaderAsyncBt;
-            private readonly MethodInfo executeScalarAsync;
-            private readonly MethodInfo executeScalarAsyncT;
+            internal readonly Func<IDbCommand, Task<int>> ExecuteNonQueryAsync;
+            internal readonly Func<IDbCommand, CancellationToken, Task<int>> ExecuteNonQueryAsyncToken;
+
+            internal readonly Func<IDbCommand, Task<IDataReader>> ExecuteReaderAsync;
+            internal readonly Func<IDbCommand, CancellationToken, Task<IDataReader>> ExecuteReaderAsyncToken;
+            internal readonly Func<IDbCommand, CommandBehavior, Task<IDataReader>> ExecuteReaderAsyncBehavior;
+            internal readonly Func<IDbCommand, CommandBehavior, CancellationToken, Task<IDataReader>> ExecuteReaderAsyncBehaviorToken;
+
+            internal readonly Func<IDbCommand, Task<object>> ExecuteScalarAsync;
+            internal readonly Func<IDbCommand, CancellationToken, Task<object>> ExecuteScalarAsyncToken;
+
             internal CommandAdapter(Type type)
             {
-                this.executeNonQueryAsync = type.GetMethod("ExecuteNonQueryAsync", new Type[0]);
-                this.executeNonQueryAsyncT= type.GetMethod("ExecuteNonQueryAsync", new[] {typeof (CancellationToken)});
-                this.executeReaderAsync = type.GetMethod("ExecuteReaderAsync", new Type[0]);
-                this.executeReaderAsyncT  = type.GetMethod("ExecuteReaderAsync", new[] {typeof (CancellationToken)});
-                this.executeReaderAsyncB  = type.GetMethod("ExecuteReaderAsync", new[] {typeof(CommandBehavior)});
-                this.executeReaderAsyncBt = type.GetMethod("ExecuteReaderAsync", new[] {typeof(CommandBehavior), typeof (CancellationToken)});
-                this.executeScalarAsync = type.GetMethod("ExecuteScalarAsync", new Type[0]);
-                this.executeScalarAsyncT  = type.GetMethod("ExecuteScalarAsync", new[] {typeof (CancellationToken)});
-            }
+                #region ExecuteNonQueryAsync
+                if (type.GetMethod("ExecuteNonQueryAsync", new Type[0]) != null)
+                {
+                    ExecuteNonQueryAsync = async command =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteNonQueryAsync();
+                    };
+                }
+                else
+                {
+                    ExecuteNonQueryAsync = async command => await Task.FromResult(command.ExecuteNonQuery());
+                }
 
+                if (type.GetMethod("ExecuteNonQueryAsync", new[] { typeof(CancellationToken) }) != null)
+                {
+                    ExecuteNonQueryAsyncToken = async (command, token) =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteNonQueryAsync(token);
+                    };
+                }
+                else
+                {
+                    ExecuteNonQueryAsyncToken = async (command, token) => await Task.FromResult(command.ExecuteNonQuery());
+                }
+                #endregion ExecuteNonQueryAsync
 
-            internal Task<int> DoExecuteNonQueryAsync(IDbCommand command)
-            {
-                if (this.executeNonQueryAsync != null)
+                #region ExecuteReaderAsync
+
+                if (type.GetMethod("ExecuteReaderAsync", new Type[0]) != null)
                 {
-                    return (Task<int>)this.executeNonQueryAsync.Invoke(command, new object[0]);
+                    ExecuteReaderAsync = async command =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteReaderAsync();
+                    };
                 }
-                return Task.FromResult(command.ExecuteNonQuery());
-            }
-            internal Task<int> DoExecuteNonQueryAsync(IDbCommand command, CancellationToken token)
-            {
-                if (this.executeNonQueryAsyncT != null)
+                else
                 {
-                    return (Task<int>)this.executeNonQueryAsyncT.Invoke(command, new object[] { token });
+                    ExecuteReaderAsync = async command => await Task.FromResult(command.ExecuteReader());
                 }
-                return Task.FromResult(command.ExecuteNonQuery());
-            }
-            internal Task<IDataReader> DoExecuteReaderAsync(IDbCommand command)
-            {
-                if (this.executeNonQueryAsync != null)
+
+                if (type.GetMethod("ExecuteReaderAsync", new[] { typeof(CancellationToken) }) != null)
                 {
-                    return (Task<IDataReader>)this.executeReaderAsync.Invoke(command, new object[0]);
+                    ExecuteReaderAsyncToken = async (command, token) =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteReaderAsync(token);
+                    };
                 }
-                return  Task.FromResult(command.ExecuteReader());
-            }
-            internal Task<IDataReader> DoExecuteReaderAsync(IDbCommand command, CancellationToken token)
-            {
-                if (this.executeNonQueryAsyncT != null)
+                else
                 {
-                    return (Task<IDataReader>)this.executeReaderAsyncT.Invoke(command, new object[] { token });
+                    ExecuteReaderAsyncToken = async (command, token) => await Task.FromResult(command.ExecuteReader());
                 }
-                return Task.FromResult(command.ExecuteReader());
-            }
-            internal Task<IDataReader> DoExecuteReaderAsync(IDbCommand command, CommandBehavior commandBehavior)
-            {
-                if (this.executeReaderAsyncB != null)
+
+                if (type.GetMethod("ExecuteReaderAsync", new[] { typeof(CommandBehavior) }) != null)
                 {
-                    return (Task<IDataReader>)this.executeReaderAsyncB.Invoke(command, new object[] { commandBehavior });
+                    ExecuteReaderAsyncBehavior = async (command, behavior) =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteReaderAsync(behavior);
+                    };
                 }
-                return Task.FromResult(command.ExecuteReader(commandBehavior));
-            }
-            internal Task<IDataReader> DoExecuteReaderAsync(IDbCommand command, CommandBehavior commandBehavior, CancellationToken token)
-            {
-                if (this.executeReaderAsyncBt != null)
+                else
                 {
-                    return (Task<IDataReader>)this.executeReaderAsyncBt.Invoke(command, new object[] { commandBehavior, token });
+                    ExecuteReaderAsyncBehavior = async (command, behavior) => await Task.FromResult(command.ExecuteReader());
                 }
-                return Task.FromResult(command.ExecuteReader(commandBehavior));
-            }
-            internal Task<Object> DoExecuteScalarAsync(IDbCommand command)
-            {
-                if (this.executeScalarAsync != null)
+
+                if (type.GetMethod("ExecuteReaderAsync", new[] { typeof(CommandBehavior), typeof(CancellationToken) }) != null)
                 {
-                    return (Task<Object>)this.executeScalarAsync.Invoke(command, new object[0]);
+                    ExecuteReaderAsyncBehaviorToken = async (command, behavior, token) =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteReaderAsync(behavior, token);
+                    };
                 }
-                return Task.FromResult(command.ExecuteScalar());
-            }
-            internal Task<Object> DoExecuteScalarAsync(IDbCommand command, CancellationToken token)
-            {
-                if (this.executeScalarAsyncT != null)
+                else
                 {
-                    return (Task<Object>)this.executeScalarAsyncT.Invoke(command, new object[] { token });
+                    ExecuteReaderAsyncBehaviorToken = async (command, behavior, token) => await Task.FromResult(command.ExecuteReader());
                 }
-                return Task.FromResult(command.ExecuteScalar());
+
+                #endregion ExecuteReaderAsync
+
+                #region ExecuteScalarAsync
+
+                if (type.GetMethod("ExecuteScalarAsync", new Type[0]) != null)
+                {
+                    ExecuteScalarAsync = async command =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteScalarAsync();
+                    };
+                }
+                else
+                {
+                    ExecuteScalarAsync = async command => await Task.FromResult(command.ExecuteScalarAsync());
+                }
+
+                if (type.GetMethod("ExecuteScalarAsync", new[] { typeof(CancellationToken) }) != null)
+                {
+                    ExecuteScalarAsyncToken = async (command, token) =>
+                    {
+                        dynamic cmd = command;
+                        return await cmd.ExecuteScalarAsync();
+                    };
+                }
+                else
+                {
+                    ExecuteScalarAsyncToken = async (command, token) => await Task.FromResult(command.ExecuteScalarAsync());
+                }
+
+                #endregion ExecuteScalarAsync
             }
         }
         private class DataReaderAdapter
         {
+            internal readonly Func<IDataReader, int, Task<bool>> IsDBNullAsync;
+            internal readonly Func<IDataReader, int, CancellationToken, Task<bool>> IsDBNullAsyncToken;
+            internal readonly Func<IDataReader, Task<bool>> NextResultAsync;
+            internal readonly Func<IDataReader, CancellationToken, Task<bool>> NextResultAsyncToken;
+            internal readonly Func<IDataReader, Task<bool>> ReadAsync;
+            internal readonly Func<IDataReader, CancellationToken, Task<bool>> ReadAsyncToken;
             private readonly MethodInfo getFieldValueAsync;
-            private readonly MethodInfo getFieldValueAsyncT;
-            private readonly MethodInfo isDbNullAsync;
-            private readonly MethodInfo isDbNullAsyncT;
-            private readonly MethodInfo nextResultAsync;
-            private readonly MethodInfo nextResultAsyncT;
-            private readonly MethodInfo readAsync;
-            private readonly MethodInfo readAsyncT;
+            private readonly MethodInfo getFieldValueAsyncToken;
             internal DataReaderAdapter(Type type)
             {
-                this.getFieldValueAsync = type.GetMethod("GetFieldValueAsync", new Type[0]);
-                this.getFieldValueAsyncT= type.GetMethod("GetFieldValueAsync", new[] {typeof (CancellationToken)});
-                this.isDbNullAsync = type.GetMethod("IsDBNullAsync", new Type[0]);
-                this.isDbNullAsyncT= type.GetMethod("IsDBNullAsync", new[] {typeof (CancellationToken)});
-                this.nextResultAsync = type.GetMethod("NextResultAsync", new Type[0]);
-                this.nextResultAsyncT= type.GetMethod("NextResultAsync", new[] {typeof (CancellationToken)});
-                this.readAsync = type.GetMethod("ReadAsync", new Type[0]);
-                this.readAsyncT= type.GetMethod("ReadAsync", new[] {typeof (CancellationToken)});
+                if (type.GetMethod("IsDBNullAsync", new[] { typeof(int) }) != null)
+                {
+                    IsDBNullAsync = async (reader, ordinal) =>
+                    {
+                        dynamic cmd = reader;
+                        return await cmd.IsDBNullAsync(ordinal);
+                    };
+                }
+                else
+                {
+                    IsDBNullAsync = async (reader, ordinal) => await Task.FromResult(reader.IsDBNull(ordinal));
+                }
+
+                if (type.GetMethod("IsDBNullAsync", new[] { typeof(int), typeof(CancellationToken) }) != null)
+                {
+                    IsDBNullAsyncToken = async (reader, ordinal, token) =>
+                    {
+                        dynamic cmd = reader;
+                        return await cmd.IsDBNullAsync(ordinal, token);
+                    };
+                }
+                else
+                {
+                    IsDBNullAsyncToken = async (reader, ordinal, token) => await Task.FromResult(reader.IsDBNull(ordinal));
+                }
+
+                if (type.GetMethod("NextResultAsync", new Type[0]) != null)
+                {
+                    NextResultAsync = async reader =>
+                    {
+                        dynamic cmd = reader;
+                        return await cmd.NextResultAsync();
+                    };
+                }
+                else
+                {
+                    NextResultAsync = async reader => await Task.FromResult(reader.NextResult());
+                }
+
+                if (type.GetMethod("NextResultAsync", new[] { typeof(int), typeof(CancellationToken) }) != null)
+                {
+                    NextResultAsyncToken = async (reader, token) =>
+                    {
+                        dynamic cmd = reader;
+                        return await cmd.NextResultAsync(token);
+                    };
+                }
+                else
+                {
+                    NextResultAsyncToken = async (reader, token) => await Task.FromResult(reader.NextResult());
+                }
+
+                if (type.GetMethod("ReadAsync", new Type[0]) != null)
+                {
+                    ReadAsync = async reader =>
+                    {
+                        dynamic cmd = reader;
+                        return await cmd.ReadAsync();
+                    };
+                }
+                else
+                {
+                    ReadAsync = async reader => await Task.FromResult(reader.Read());
+                }
+
+                if (type.GetMethod("ReadAsync", new[] { typeof(int), typeof(CancellationToken) }) != null)
+                {
+                    ReadAsyncToken = async (reader, token) =>
+                    {
+                        dynamic cmd = reader;
+                        return await cmd.ReadAsync(token);
+                    };
+                }
+                else
+                {
+                    ReadAsyncToken = async (reader, token) => await Task.FromResult(reader.Read());
+                }
+
+                // for template function we have to defer checks
+                this.getFieldValueAsync = type.GetMethod("GetFieldValueAsync", new[] { typeof(int) });
+                this.getFieldValueAsyncToken = type.GetMethod("GetFieldValueAsync", new[] { typeof(int), typeof(CancellationToken) });
             }
 
 
@@ -162,150 +295,123 @@ namespace System.Data
             {
                 if (this.getFieldValueAsync != null)
                 {
-                    return (Task<T>)this.getFieldValueAsync.Invoke(reader, new object[]{ordinal});
+                    var method = this.getFieldValueAsync.MakeGenericMethod(typeof(T));
+                    return (Task<T>)method.Invoke(reader, new object[] { ordinal });
                 }
                 return Task.FromResult((T)reader.GetValue(ordinal));
             }
             internal Task<T> DoGetFieldValueAsync<T>(IDataReader reader, int ordinal, CancellationToken token)
             {
-                if (this.getFieldValueAsyncT != null)
+                if (this.getFieldValueAsyncToken != null)
                 {
-                    return (Task<T>)this.getFieldValueAsyncT.Invoke(reader, new object[]{ordinal, token});
+                    var method = this.getFieldValueAsyncToken.MakeGenericMethod(typeof(T));
+                    return (Task<T>)method.Invoke(reader, new object[] { ordinal, token });
                 }
                 return Task.FromResult((T)reader.GetValue(ordinal));
             }
-            internal Task<bool> DoIsDBNullAsync(IDataReader reader, int ordinal)
-            {
-                if (this.isDbNullAsync != null)
-                {
-                    return (Task<bool>)this.isDbNullAsync.Invoke(reader, new object[]{ordinal});
-                }
-                return Task.FromResult(reader.IsDBNull(ordinal));
-            }
-            internal Task<bool> DoIsDBNullAsync(IDataReader reader, int ordinal, CancellationToken token)
-            {
-                if (this.isDbNullAsyncT != null)
-                {
-                    return (Task<bool>)this.isDbNullAsyncT.Invoke(reader, new object[]{ordinal, token});
-                }
-                return Task.FromResult(reader.IsDBNull(ordinal));
-            }
-            internal Task<bool> DoNextResultAsync(IDataReader reader)
-            {
-                if (this.nextResultAsync != null)
-                {
-                    return (Task<bool>)this.nextResultAsync.Invoke(reader, new object[0]);
-                }
-                return Task.FromResult(reader.NextResult());
-            }
-            internal Task<bool> DoNextResultAsync(IDataReader reader, CancellationToken token)
-            {
-                if (this.nextResultAsyncT != null)
-                {
-                    return (Task<bool>)this.nextResultAsyncT.Invoke(reader, new object[]{token});
-                }
-                return Task.FromResult(reader.NextResult());
-            }
-            internal Task<bool> DoReadAsync(IDataReader reader)
-            {
-                if (this.readAsync != null)
-                {
-                    return (Task<bool>)this.readAsync.Invoke(reader, new object[0]);
-                }
-                return Task.FromResult(reader.Read());
-            }
-            internal Task<bool> DoReadAsync(IDataReader reader, CancellationToken token)
-            {
-                if (this.readAsyncT != null)
-                {
-                    return (Task<bool>)this.readAsyncT.Invoke(reader, new object[]{token});
-                }
-                return Task.FromResult(reader.Read());
-            }
         }
-
 
 
         public static Task OpenAsync(this IDbConnection connection)
         {
             if (connection == null) throw new ArgumentNullException("connection");
+            var dbConnection = connection as DbConnection;
+            if (dbConnection != null) return dbConnection.OpenAsync();
             return ConnectionAdapters.GetOrAdd(connection.GetType(),
                 type => new ConnectionAdapter(type))
-                    .DoOpenAsync(connection);
+                    .OpenAsync(connection);
         }
 
         public static Task OpenAsync(this IDbConnection connection, CancellationToken token)
         {
             if (connection == null) throw new ArgumentNullException("connection");
+            var dbConnection = connection as DbConnection;
+            if (dbConnection != null) return dbConnection.OpenAsync(token);
             return ConnectionAdapters.GetOrAdd(connection.GetType(),
                 type => new ConnectionAdapter(type))
-                    .DoOpenAsync(connection, token);
+                    .OpenAsyncToken(connection, token);
         }
 
 
         public static Task<int> ExecuteNonQueryAsync(this IDbCommand command)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteNonQueryAsync();
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteNonQueryAsync(command);
+                    .ExecuteNonQueryAsync(command);
         }
 
         public static Task<int> ExecuteNonQueryAsync(this IDbCommand command, CancellationToken token)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteNonQueryAsync(token);
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteNonQueryAsync(command, token);
+                    .ExecuteNonQueryAsyncToken(command, token);
         }
 
         public static Task<IDataReader> ExecuteReaderAsync(this IDbCommand command)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteReaderAsync().ContinueWith<IDataReader>(t=>t.Result);
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteReaderAsync(command);
+                    .ExecuteReaderAsync(command);
         }
 
         public static Task<IDataReader> ExecuteReaderAsync(this IDbCommand command, CancellationToken token)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteReaderAsync(token).ContinueWith<IDataReader>(t => t.Result, token);
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteReaderAsync(command, token);
+                    .ExecuteReaderAsyncToken(command, token);
         }
 
         public static Task<IDataReader> ExecuteReaderAsync(this IDbCommand command, CommandBehavior commandBehavior)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteReaderAsync(commandBehavior).ContinueWith<IDataReader>(t => t.Result);
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteReaderAsync(command, commandBehavior);
+                    .ExecuteReaderAsyncBehavior(command, commandBehavior);
         }
 
         public static Task<IDataReader> ExecuteReaderAsync(this IDbCommand command, CommandBehavior commandBehavior,
             CancellationToken token)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteReaderAsync(commandBehavior, token).ContinueWith<IDataReader>(t => t.Result, token);
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteReaderAsync(command, commandBehavior, token);
+                    .ExecuteReaderAsyncBehaviorToken(command, commandBehavior, token);
         }
 
         public static Task<Object> ExecuteScalarAsync(this IDbCommand command)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteScalarAsync();
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteScalarAsync(command);
+                    .ExecuteScalarAsync(command);
         }
 
         public static Task<Object> ExecuteScalarAsync(this IDbCommand command, CancellationToken token)
         {
             if (command == null) throw new ArgumentNullException("command");
+            var dbCommand = command as DbCommand;
+            if (dbCommand != null) return dbCommand.ExecuteScalarAsync(token);
             return CommandAdapters.GetOrAdd(command.GetType(),
                 type => new CommandAdapter(type))
-                    .DoExecuteScalarAsync(command, token);
+                    .ExecuteScalarAsyncToken(command, token);
         }
 
 
@@ -313,6 +419,8 @@ namespace System.Data
         public static Task<T> GetFieldValueAsync<T>(this IDataReader reader, int ordinal)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.GetFieldValueAsync<T>(ordinal);
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
                     .DoGetFieldValueAsync<T>(reader, ordinal);
@@ -320,6 +428,8 @@ namespace System.Data
         public static Task<T> GetFieldValueAsync<T>(this IDataReader reader, int ordinal, CancellationToken token)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.GetFieldValueAsync<T>(ordinal, token);
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
                     .DoGetFieldValueAsync<T>(reader, ordinal, token);
@@ -327,44 +437,56 @@ namespace System.Data
         public static Task<bool> IsDBNullAsync(this IDataReader reader, int ordinal)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.IsDBNullAsync(ordinal);
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
-                    .DoIsDBNullAsync(reader, ordinal);
+                    .IsDBNullAsync(reader, ordinal);
         }
         public static Task<bool> IsDBNullAsync(this IDataReader reader, int ordinal, CancellationToken token)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.IsDBNullAsync(ordinal, token);
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
-                    .DoIsDBNullAsync(reader, ordinal, token);
+                    .IsDBNullAsyncToken(reader, ordinal, token);
         }
         public static Task<bool> NextResultAsync(this IDataReader reader)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.NextResultAsync();
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
-                    .DoNextResultAsync(reader);
+                    .NextResultAsync(reader);
         }
         public static Task<bool> NextResultAsync(this IDataReader reader, CancellationToken token)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.NextResultAsync(token);
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
-                    .DoNextResultAsync(reader, token);
+                    .NextResultAsyncToken(reader, token);
         }
         public static Task<bool> ReadAsync(this IDataReader reader)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.ReadAsync();
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
-                    .DoReadAsync(reader);
+                    .ReadAsync(reader);
         }
         public static Task<bool> ReadAsync(this IDataReader reader, CancellationToken token)
         {
             if (reader == null) throw new ArgumentNullException("reader");
+            var dataReader = reader as DbDataReader;
+            if (dataReader != null) return dataReader.ReadAsync(token);
             return DataReaderAdapters.GetOrAdd(reader.GetType(),
                 type => new DataReaderAdapter(type))
-                    .DoReadAsync(reader, token);
+                    .ReadAsyncToken(reader, token);
         }
     }
 }
