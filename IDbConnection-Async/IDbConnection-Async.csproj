@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Data</RootNamespace>
-    <AssemblyName>IDbConnection-Async</AssemblyName>
+    <AssemblyName>TTRider.IDbConnection-Async</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -43,29 +43,26 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="IDbConnection-Async.nuspec" />
+    <None Include="TTRider.IDbConnection-Async.nuspec" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
     </PostBuildEvent>
   </PropertyGroup>
-
-
   <PropertyGroup>
     <NugetPacking>$(TargetDir)\nugetpack</NugetPacking>
     <NugetPackingLib>$(TargetDir)\nugetpack\lib\net45</NugetPackingLib>
     <NugetTarget>$(SolutionDir)nuget\$(ConfigurationName)</NugetTarget>
   </PropertyGroup>
   <Target Name="AfterBuild">
-    <RemoveDir Directories="$(NugetPacking);" Condition="Exists(@(NugetPacking))"/>
-    <MakeDir Directories="$(NugetPacking)"/>
-    <MakeDir Directories="$(NugetPackingLib)"/>
-    <MakeDir Directories="$(NugetTarget)" Condition="!Exists(@(NugetTarget))"/>
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(NugetPackingLib)" OverwriteReadOnlyFiles="true"/>
-    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(NugetPackingLib)" OverwriteReadOnlyFiles="true"/>
-    <Copy SourceFiles="$(ProjectDir)$(AssemblyName).nuspec" DestinationFolder="$(NugetPacking)" OverwriteReadOnlyFiles="true"/>
-    <Exec Command="$(SolutionDir)nuget\nuget pack $(NugetPacking)\$(AssemblyName).nuspec -OutputDir $(NugetTarget)"/>
+    <RemoveDir Directories="$(NugetPacking);" Condition="Exists(@(NugetPacking))" />
+    <MakeDir Directories="$(NugetPacking)" />
+    <MakeDir Directories="$(NugetPackingLib)" />
+    <MakeDir Directories="$(NugetTarget)" Condition="!Exists(@(NugetTarget))" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(NugetPackingLib)" OverwriteReadOnlyFiles="true" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(NugetPackingLib)" OverwriteReadOnlyFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)$(AssemblyName).nuspec" DestinationFolder="$(NugetPacking)" OverwriteReadOnlyFiles="true" />
+    <Exec Command="$(SolutionDir)nuget\nuget pack $(NugetPacking)\$(AssemblyName).nuspec -OutputDir $(NugetTarget)" />
   </Target>
-
 </Project>
