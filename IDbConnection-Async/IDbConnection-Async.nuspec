@@ -18,7 +18,7 @@
       Just reference this assembly, and you can call Async methods on IDbConnection/IDbCommand and IDataReader
     </releaseNotes>
     <copyright>Copyright (C) 2014-2015 TTRider, L.L.C.</copyright>
-    <tags>SQL</tags>
+    <tags>SQL IDbConnection IDbCommand IDataReader SqlConnection SqlCommand</tags>
     <!--<dependencies>
       <dependency id="SampleDependency" version="1.0" />
     </dependencies>-->
