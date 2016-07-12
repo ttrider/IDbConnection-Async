@@ -55,3 +55,5 @@ Temporary Items
 /Tests/bin/Release
 /Tests/obj/Release
 *.suo
+/IDbConnection-Async.Core/bin
+/IDbConnection-Async.Core/obj

@@ -1,0 +1,32 @@
+{
+  "title": "TTRider.IDbConnection-Async (core)",
+  "version": "1.1.0-core-beta-7121929",
+  "authors": [ "TTRider" ],
+  "packOptions": {
+    "owners": [ "TTRider" ],
+    "licenseUrl": "https://github.com/ttrider/IDbConnection-Async/blob/master/LICENSE",
+    "projectUrl": "https://github.com/ttrider/IDbConnection-Async",
+    "tags": [ "SQL", "IDbConnectionSQL", "IDbConnection", "IDbCommand", "IDataReader", "SqlConnection", "SqlCommandIDbCommand", "IDataReader", "SqlConnection", "SqlCommand" ]
+  },
+  "description": "Shim over IDbConnection interface to allow access to Async methods, if they exist",
+  "copyright": "Copyright (C) 2014-2016 TTRider, L.L.C.",
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "Microsoft.CSharp": "4.0.0",
+    "System.Data.Common": "4.1.0"
+  },
+  "frameworks": {
+    "netstandard1.6": {
+      "imports": "dnxcore50",
+      "buildOptions": {
+        "define": [ "BUILD_CORECLR" ]
+      }
+    },
+    "net461": {
+      "dependencies": {
+      },
+      "frameworkAssemblies": {
+      }
+    }
+  }
+}
