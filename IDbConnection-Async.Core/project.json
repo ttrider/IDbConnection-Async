@@ -1,6 +1,7 @@
 {
-  "title": "TTRider.IDbConnection-Async (core)",
-  "version": "1.1.0-core-beta-7121929",
+  "title": "TTRider.IDbConnection-Async",
+  "name": "TTRider.IDbConnection-Async",
+  "version": "1.1.0-core-beta-7130908",
   "authors": [ "TTRider" ],
   "packOptions": {
     "owners": [ "TTRider" ],
