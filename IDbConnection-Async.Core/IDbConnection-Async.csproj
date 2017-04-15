@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Shim over IDbConnection interface to allow access to Async methods, if they exist</Description>
+    <Copyright>Copyright (C) 2014-2017 TTRider Technologies, Inc.</Copyright>
+    <AssemblyTitle>TTRider.IDbConnection-Async</AssemblyTitle>
+    <VersionPrefix>1.1.2</VersionPrefix>
+    <Authors>TTRider</Authors>
+    <TargetFrameworks>netstandard1.6;net461</TargetFrameworks>
+    <AssemblyName>TTRider.IDbConnection-Async</AssemblyName>
+    <PackageId>IDbConnection-Async</PackageId>
+    <PackageTags>SQL;IDbConnectionSQL;IDbConnection;IDbCommand;IDataReader;SqlConnection;SqlCommandIDbCommand;IDataReader;SqlConnection;SqlCommand</PackageTags>
+    <PackageProjectUrl>https://github.com/ttrider/IDbConnection-Async</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/ttrider/IDbConnection-Async/blob/master/LICENSE</PackageLicenseUrl>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.3.0" />
+    <PackageReference Include="System.Data.Common" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>
