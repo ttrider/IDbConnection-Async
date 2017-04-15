@@ -8,7 +8,7 @@
     <Authors>TTRider</Authors>
     <TargetFrameworks>netstandard1.6;net461</TargetFrameworks>
     <AssemblyName>TTRider.IDbConnection-Async</AssemblyName>
-    <PackageId>IDbConnection-Async</PackageId>
+    <PackageId>TTRider.IDbConnection-Async</PackageId>
     <PackageTags>SQL;IDbConnectionSQL;IDbConnection;IDbCommand;IDataReader;SqlConnection;SqlCommandIDbCommand;IDataReader;SqlConnection;SqlCommand</PackageTags>
     <PackageProjectUrl>https://github.com/ttrider/IDbConnection-Async</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/ttrider/IDbConnection-Async/blob/master/LICENSE</PackageLicenseUrl>
